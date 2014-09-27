@@ -63,6 +63,7 @@ class Kohana_Model_Queue_Object extends ORM {
 		if ( ! $this->loaded())
 			return;
 
+		$this->retries++;
 		if ($this->retries >= $max_retries)
 		{
 			$this->status = Model_Queue_Object::DISCARDED;
