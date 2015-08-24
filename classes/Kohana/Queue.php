@@ -118,6 +118,7 @@ class Kohana_Queue {
 									'message' => $ex->getMessage(),
 								),
 							);
+							$success = FALSE;
 						}
 						if ($success)
 						{
@@ -174,7 +175,12 @@ class Kohana_Queue {
 
 	protected function log($value, $level = Log::DEBUG)
 	{
-		$process_hash = ($this->process->loaded() ? "[{$this->process->hash}] " : "");
+		$process_hash = '';
+		if ($this->process instanceof Model_Queue_Process
+			AND $this->process->loaded())
+		{
+			$process_hash = "[{$this->process->hash}] ";
+		}
 		if (is_scalar($value))
 		{
 			Kohana::$log->add($level, "$process_hash{$this->_name}, ".$value);
