@@ -77,6 +77,8 @@ class Kohana_Queue {
 		$object->data = $data;
 
 		$object->save();
+
+		return $object;
 	}
 
 	public function dispatch($mode)
@@ -87,8 +89,6 @@ class Kohana_Queue {
 		if ($this->process instanceof Model_Queue_Process)
 		{
 			$batch_size = Arr::get($this->settings, 'batch_size', 20);
-			$retry_interval = Arr::get($this->settings, 'retry_interval', 60);
-			$max_retries = Arr::get($this->settings, 'max_retries', 10);
 
 			$i = 1;
 			$dispatched = 0;
@@ -102,32 +102,7 @@ class Kohana_Queue {
 					$this->info("Batch no. $i, size = $size");
 					foreach ($batch as $object)
 					{
-						$object->process_hash = $this->process->hash;
-						$log_data = array();
-						try
-						{
-							$success = $this->process($object, $log_data);
-						}
-						catch (Exception $ex)
-						{
-							$this->error($ex->getMessage());
-							$this->error($ex->getTraceAsString());
-							$log_data = array(
-								'exception' => array(
-									'code' => $ex->getCode(),
-									'message' => $ex->getMessage(),
-								),
-							);
-							$success = FALSE;
-						}
-						if ($success)
-						{
-							$object->processed($log_data);
-						}
-						else
-						{
-							$object->defer($retry_interval, $max_retries, $log_data);
-						}
+						$this->dispatch_object($object, $process);
 						$dispatched++;
 					}
 					$this->check();
@@ -151,6 +126,43 @@ class Kohana_Queue {
 		}
 	}
 
+	public function dispatch_object(Model_Queue_Object & $object, Model_Queue_Process & $process = NULL)
+	{
+		if ($process !== NULL)
+		{
+			$object->process_hash = $this->process->hash;
+		}
+		$log_data = array();
+		try
+		{
+			$success = $this->process($object, $log_data);
+		}
+		catch (Exception $ex)
+		{
+			$this->error($ex->getMessage());
+			$this->error($ex->getTraceAsString());
+			$log_data = array(
+				'exception' => array(
+					'code' => $ex->getCode(),
+					'message' => $ex->getMessage(),
+				),
+			);
+			$success = FALSE;
+		}
+		if ($success)
+		{
+			$object->processed($log_data);
+		}
+		else
+		{
+			$retry_interval = Arr::get($this->settings, 'retry_interval', 60);
+			$max_retries = Arr::get($this->settings, 'max_retries', 10);
+
+			$object->defer($retry_interval, $max_retries, $log_data);
+		}
+		return $this;
+	}
+
 	/**
 	 * Method to overwrite in child class.
 	 * It processes queue $object
@@ -171,6 +183,7 @@ class Kohana_Queue {
 			$this->process->checked = time();
 			$this->process->save();
 		}
+		return $this;
 	}
 
 	protected function log($value, $level = Log::DEBUG)
@@ -189,6 +202,7 @@ class Kohana_Queue {
 		{
 			Kohana::$log->add($level, "$process_hash{$this->_name}, ".print_r($value, TRUE));
 		}
+		return $this;
 	}
 
 	protected function debug($value)

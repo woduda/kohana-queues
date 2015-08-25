@@ -37,7 +37,7 @@ CREATE TABLE "queue_object_logs" (
      , "queue_object_id" INTEGER NOT NULL
      , "created" INTEGER NOT NULL
      , "status" CHAR(1) NOT NULL
-     , "process_hash" CHAR(8) NOT NULL
+     , "process_hash" CHAR(8)
      , "data" TEXT
      , PRIMARY KEY ("id")
 );
