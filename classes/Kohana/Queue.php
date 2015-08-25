@@ -102,7 +102,7 @@ class Kohana_Queue {
 					$this->info("Batch no. $i, size = $size");
 					foreach ($batch as $object)
 					{
-						$this->dispatch_object($object, $process);
+						$this->dispatch_object($object, $this->process);
 						$dispatched++;
 					}
 					$this->check();
